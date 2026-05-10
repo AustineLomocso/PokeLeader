@@ -1,12 +1,12 @@
-# Hardcoded type → Pokemon team mapping
+# PokéLeader — data/gym_teams.py
 
 GYM_TEAMS = {
-    "Psychic": ["Alakazam", "Gardevoir", "Metagross"],
-    "Fighting": ["Machamp", "Lucario", "Blaziken"],
-    "Normal": ["Snorlax", "Slaking", "Blissey"],
-    "Fairy": ["Sylveon", "Togekiss", "Mimikyu"],
-    "Ghost": ["Gengar", "Chandelure", "Dragapult"],
-    "Electric": ["Raichu", "Jolteon", "Luxray"],
-    "Water": ["Gyarados", "Lapras", "Swampert"],
-    "Dark": ["Umbreon", "Tyranitar", "Hydreigon"],
+    'psychic':  ['alakazam', 'gardevoir', 'espeon'],
+    'fighting': ['machamp', 'lucario', 'hawlucha'],
+    'normal':   ['snorlax', 'staraptor', 'blissey'],
+    'fairy':    ['togekiss', 'sylveon', 'clefable'],
+    'ghost':    ['gengar', 'chandelure', 'mimikyu'],
+    'electric': ['jolteon', 'magnezone', 'rotom'],
+    'water':    ['vaporeon', 'starmie', 'gyarados'],
+    'dark':     ['umbreon', 'hydreigon', 'weavile'],
 }
