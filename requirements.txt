@@ -1,0 +1,27 @@
+# Core diffusion
+torch==2.1.0
+torchvision==0.16.0
+diffusers==0.27.2
+transformers==4.38.2
+accelerate==0.27.2
+
+# IP-Adapter
+ip_adapter @ git+https://github.com/tencent-ailab/IP-Adapter.git
+
+# Face detection
+mediapipe==0.10.9
+opencv-python==4.9.0.80
+
+# Image processing
+Pillow==10.2.0
+
+# API and data
+anthropic==0.21.3
+requests==2.31.0
+
+# UI
+gradio==4.19.2
+
+# Utilities
+numpy==1.26.4
+huggingface_hub==0.21.3
