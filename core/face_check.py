@@ -1,15 +1,11 @@
-
 # PokéLeader — core/face_check.py
 
 import cv2
 import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
 import numpy as np
-import os
 
-# Model path for MediaPipe Tasks API
-MODEL_PATH = 'blaze_face_short_range.tflite'
+mp_face_detection = mp.solutions.face_detection
+
 
 def check_and_crop_face(image_array):
     """
@@ -17,32 +13,26 @@ def check_and_crop_face(image_array):
     Returns a cropped face numpy array (RGB, 256x256)
     or None if no face detected or quality too low.
     """
-    if not os.path.exists(MODEL_PATH):
-        return None, f"Face detection model missing. Please ensure {MODEL_PATH} is in the project root."
-
     h, w = image_array.shape[:2]
 
-    # Initialize MediaPipe Face Detector
-    base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
-    options = vision.FaceDetectorOptions(base_options=base_options)
-    
-    with vision.FaceDetector.create_from_options(options) as detector:
-        # MediaPipe expects Image object
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_array)
-        results = detector.detect(mp_image)
+    with mp_face_detection.FaceDetection(
+        model_selection=1,
+        min_detection_confidence=0.5
+    ) as detector:
+        results = detector.process(image_array)
 
     if not results.detections:
         return None, "No face detected. Please upload a clear front-facing photo."
 
     # Use the first (most confident) detection
     detection = results.detections[0]
-    bbox = detection.bounding_box
+    bbox = detection.location_data.relative_bounding_box
 
-    # MediaPipe Tasks API returns absolute coordinates for bounding_box
-    x = bbox.origin_x
-    y = bbox.origin_y
-    bw = bbox.width
-    bh = bbox.height
+    # Convert relative to absolute coordinates
+    x = int(bbox.xmin * w)
+    y = int(bbox.ymin * h)
+    bw = int(bbox.width * w)
+    bh = int(bbox.height * h)
 
     # Add padding around the face
     pad = int(max(bw, bh) * 0.3)

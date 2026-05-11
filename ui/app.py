@@ -81,6 +81,7 @@ def generate_card(user_image, user_name, q1, q2, q3):
     card = assemble_card(
         portrait_pil=portrait,
         gym_type=gym_type,
+        type_color=type_color,
         opening_line=opening_line,
         badge_name=badge_name,
         sprites=sprites,
