@@ -7,11 +7,12 @@ def download_all():
     print("--- Starting Model Downloads ---")
     
     # 1. Download Stable Diffusion v1.5
-    print("\n[1/2] Downloading Stable Diffusion v1.5 (runwayml/stable-diffusion-v1-5)...")
+    print("\n[1/2] Downloading Stable Diffusion v1.5 (runwayml/stable-diffusion-v1-5 - fp16)...")
     try:
         StableDiffusionPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
             torch_dtype=torch.float16,
+            variant="fp16",
             # We don't need the safety checker for the download phase
             safety_checker=None 
         )
