@@ -1,15 +1,20 @@
 # PokéLeader — core/generate_text.py
 
-import anthropic
+import google.generativeai as genai
 import os
-from train.config import CLAUDE_MODEL, MAX_TOKENS
+from dotenv import load_dotenv
+from train.config import GEMINI_MODEL, MAX_TOKENS
 
-# Initialize client only if API key is present
-def get_client():
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+# Load .env file if it exists
+load_dotenv()
+
+# Initialize Gemini only if API key is present
+def get_gemini_model():
+    api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         return None
-    return anthropic.Anthropic(api_key=api_key)
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel(GEMINI_MODEL)
 
 QUESTIONS = [
     ["My wifi disconnected during something important",
@@ -27,19 +32,45 @@ QUESTIONS = [
 ]
 
 
+FALLBACK_LINES = {
+    'psychic': "Your thoughts are like an open book, and frankly, I'm bored. My Pokemon will shut that book for good!",
+    'fighting': "You call that a battle stance? My team has more discipline in their sleep than you have in your whole body!",
+    'normal': "Don't let the 'Normal' label fool you. We're consistently better than you in every way!",
+    'fairy': "Oh, look at you! So brave, so small, so about to be crushed by something sparkly and adorable!",
+    'ghost': "The shadows are whispering about your defeat. I'm just here to make it official. Boo!",
+    'electric': "You look like you need a jumpstart! My team is about to provide a very shocking reality check!",
+    'water': "You're out of your depth, Challenger. Let the waves of your own failure wash over you!",
+    'dark': "The night is long, and your journey ends here. No need for words, the result will speak for itself.",
+}
+
+FALLBACK_BADGES = {
+    'psychic': "Mind-Bender Badge",
+    'fighting': "Iron-Fist Badge",
+    'normal': "Plain-Truth Badge",
+    'fairy': "Glitter-Bomb Badge",
+    'ghost': "Spirit-Walker Badge",
+    'electric': "Short-Circuit Badge",
+    'water': "High-Tide Badge",
+    'dark': "Midnight-Eclipse Badge",
+}
+
 def generate_gym_leader_text(gym_type, q1_idx, q2_idx, q3_idx, user_name="Challenger"):
     """
-    Generates opening trash talk line and badge name.
+    Generates opening trash talk line and badge name using Gemini.
     """
-    client = get_client()
-    if not client:
-        return "I'm ready to battle! (API Key missing)", "Placeholder Badge"
-
+    model = get_gemini_model()
+    
     answers = [
         QUESTIONS[0][q1_idx],
         QUESTIONS[1][q2_idx],
         QUESTIONS[2][q3_idx],
     ]
+
+    if not model:
+        # Fallback if no API key
+        line = FALLBACK_LINES.get(gym_type, "I'm ready to battle!")
+        badge = FALLBACK_BADGES.get(gym_type, "Gym Badge")
+        return line, badge
 
     prompt = f"""You are generating content for a Pokemon Gym Leader card app.
 
@@ -61,22 +92,33 @@ Respond in this exact format with no other text:
 OPENING_LINE: [the line here]
 BADGE_NAME: [the badge name here]"""
 
-    message = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=MAX_TOKENS,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=MAX_TOKENS,
+                temperature=0.7,
+            )
+        )
+        
+        text = response.text.strip()
+        lines = text.split('\n')
 
-    response = message.content[0].text.strip()
-    lines = response.split('\n')
+        opening_line = ''
+        badge_name = ''
 
-    opening_line = ''
-    badge_name = ''
+        for line in lines:
+            if line.startswith('OPENING_LINE:'):
+                opening_line = line.replace('OPENING_LINE:', '').strip()
+            elif line.startswith('BADGE_NAME:'):
+                badge_name = line.replace('BADGE_NAME:', '').strip()
+        
+        # If Gemini fails to follow format perfectly
+        if not opening_line: opening_line = FALLBACK_LINES.get(gym_type)
+        if not badge_name: badge_name = FALLBACK_BADGES.get(gym_type)
 
-    for line in lines:
-        if line.startswith('OPENING_LINE:'):
-            opening_line = line.replace('OPENING_LINE:', '').strip()
-        elif line.startswith('BADGE_NAME:'):
-            badge_name = line.replace('BADGE_NAME:', '').strip()
+        return opening_line, badge_name
 
-    return opening_line, badge_name
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return FALLBACK_LINES.get(gym_type), FALLBACK_BADGES.get(gym_type)

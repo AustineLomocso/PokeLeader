@@ -21,19 +21,31 @@ _ip_model = None
 def get_pipeline():
     global _pipe, _ip_model
     if _pipe is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        dtype = torch.float16 if device == "cuda" else torch.float32
+
         # Load base pipeline
         _pipe = StableDiffusionPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
-            torch_dtype=torch.float16,
+            torch_dtype=dtype,
+            variant="fp16",
             safety_checker=None,
-        ).to("cuda")
+            low_cpu_mem_usage=True,
+        ).to(device)
+
+        # Optimizations for low VRAM/RAM
+        _pipe.enable_attention_slicing()
+        if device == "cuda":
+             _pipe.enable_model_cpu_offload()
 
         # Load Pokemon Trainer LoRA if it exists
         if os.path.exists(LORA_PATH):
-            _pipe.load_lora_weights(LORA_PATH)
-            _pipe.fuse_lora(lora_scale=LORA_WEIGHT)
-
-        # Load IP-Adapter face weights
+            try:
+                _pipe.load_lora_weights(LORA_PATH)
+                _pipe.fuse_lora(lora_scale=LORA_WEIGHT)
+                print("✓ Pokemon Trainer LoRA loaded and fused.")
+            except Exception as e:
+                print(f"⚠ Could not load LoRA: {e}. Continuing without it.")
         ip_adapter_weights = hf_hub_download(
             repo_id="h94/IP-Adapter",
             filename="models/ip-adapter-full-face_sd15.bin"
@@ -43,7 +55,7 @@ def get_pipeline():
             sd_pipe=_pipe,
             image_encoder_path="openai/clip-vit-large-patch14",
             ip_ckpt=ip_adapter_weights,
-            device="cuda"
+            device=device
         )
     return _ip_model
 
