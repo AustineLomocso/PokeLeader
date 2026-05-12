@@ -46,6 +46,22 @@ def generate_card(user_image, user_name, q1, q2, q3):
     if user_image is None:
         return None, "Please upload a photo first."
 
+    # ---------------------------------------------------------
+    # THE WEBCAM SANITIZER: 
+    # Force any weird Gradio webcam array into a standard RGB format
+    if isinstance(user_image, np.ndarray):
+        # Fix decimal floats if Gradio sent them from the webcam
+        if user_image.dtype != np.uint8:
+            if user_image.max() <= 1.0:
+                user_image = (user_image * 255.0)
+            user_image = user_image.astype(np.uint8)
+        
+        # Use PIL to safely strip alpha channels and force pure RGB
+        # This prevents cv2 and MediaPipe from crashing or corrupting
+        safe_pil = Image.fromarray(user_image).convert("RGB")
+        user_image = np.array(safe_pil)
+    # ---------------------------------------------------------
+
     # Face check
     face_crop, msg = check_and_crop_face(user_image)
     if face_crop is None:
