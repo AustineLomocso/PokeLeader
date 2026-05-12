@@ -71,7 +71,8 @@ def check_and_crop_face(image_array):
         return None, "No face detected. Try better lighting, move closer, or face the camera directly."
 
     # Use the most confident detection
-    detection = max(detections, key=lambda d: d.score[0])
+    # MediaPipe Tasks API uses categories[0].score, not score[0]
+    detection = max(detections, key=lambda d: d.categories[0].score if d.categories else 0)
     bbox = detection.bounding_box
 
     # MediaPipe Tasks API returns absolute coordinates
