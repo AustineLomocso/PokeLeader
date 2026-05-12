@@ -53,7 +53,7 @@ def get_pipeline():
 
         _ip_model = IPAdapterFull(
             sd_pipe=_pipe,
-            image_encoder_path="openai/clip-vit-large-patch14",
+            image_encoder_path="laion/CLIP-ViT-H-14-laion2B-s32B-b79K",
             ip_ckpt=ip_adapter_weights,
             device=device
         )
