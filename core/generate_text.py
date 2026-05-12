@@ -1,6 +1,7 @@
 # PokéLeader — core/generate_text.py
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import os
 from dotenv import load_dotenv
 from train.config import GEMINI_MODEL, MAX_TOKENS
@@ -8,13 +9,12 @@ from train.config import GEMINI_MODEL, MAX_TOKENS
 # Load .env file if it exists
 load_dotenv()
 
-# Initialize Gemini only if API key is present
-def get_gemini_model():
+# Initialize Gemini client only if API key is present
+def get_gemini_client():
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         return None
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel(GEMINI_MODEL)
+    return genai.Client(api_key=api_key)
 
 QUESTIONS = [
     ["My wifi disconnected during something important",
@@ -58,15 +58,15 @@ def generate_gym_leader_text(gym_type, q1_idx, q2_idx, q3_idx, user_name="Challe
     """
     Generates opening trash talk line and badge name using Gemini.
     """
-    model = get_gemini_model()
-    
+    client = get_gemini_client()
+
     answers = [
         QUESTIONS[0][q1_idx],
         QUESTIONS[1][q2_idx],
         QUESTIONS[2][q3_idx],
     ]
 
-    if not model:
+    if not client:
         # Fallback if no API key
         line = FALLBACK_LINES.get(gym_type, "I'm ready to battle!")
         badge = FALLBACK_BADGES.get(gym_type, "Gym Badge")
@@ -93,14 +93,15 @@ OPENING_LINE: [the line here]
 BADGE_NAME: [the badge name here]"""
 
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 max_output_tokens=MAX_TOKENS,
                 temperature=0.7,
             )
         )
-        
+
         text = response.text.strip()
         lines = text.split('\n')
 
@@ -112,7 +113,7 @@ BADGE_NAME: [the badge name here]"""
                 opening_line = line.replace('OPENING_LINE:', '').strip()
             elif line.startswith('BADGE_NAME:'):
                 badge_name = line.replace('BADGE_NAME:', '').strip()
-        
+
         # If Gemini fails to follow format perfectly
         if not opening_line: opening_line = FALLBACK_LINES.get(gym_type)
         if not badge_name: badge_name = FALLBACK_BADGES.get(gym_type)
