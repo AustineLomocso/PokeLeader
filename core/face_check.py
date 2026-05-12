@@ -1,15 +1,21 @@
-
 # PokéLeader — core/face_check.py
 
 import cv2
 import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
 import numpy as np
-import os
+from PIL import Image, ImageEnhance
 
-# Model path for MediaPipe Tasks API
-MODEL_PATH = 'blaze_face_short_range.tflite'
+def preprocess_image(image_array):
+    """
+    Enhance image quality before face detection.
+    Helps with low quality, dark, or blurry webcam images.
+    """
+    pil_img = Image.fromarray(image_array)
+    pil_img = ImageEnhance.Brightness(pil_img).enhance(1.3)
+    pil_img = ImageEnhance.Contrast(pil_img).enhance(1.3)
+    pil_img = ImageEnhance.Sharpness(pil_img).enhance(2.0)
+    return np.array(pil_img)
+
 
 def check_and_crop_face(image_array):
     """
@@ -17,32 +23,36 @@ def check_and_crop_face(image_array):
     Returns a cropped face numpy array (RGB, 256x256)
     or None if no face detected or quality too low.
     """
-    if not os.path.exists(MODEL_PATH):
-        return None, f"Face detection model missing. Please ensure {MODEL_PATH} is in the project root."
+    if image_array is None:
+        return None, "No image provided."
 
     h, w = image_array.shape[:2]
 
-    # Initialize MediaPipe Face Detector
-    base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
-    options = vision.FaceDetectorOptions(base_options=base_options)
-    
-    with vision.FaceDetector.create_from_options(options) as detector:
-        # MediaPipe expects Image object
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_array)
-        results = detector.detect(mp_image)
+    # Try detection on original first, then enhanced if it fails
+    for attempt, img in enumerate([image_array, preprocess_image(image_array)]):
+        mp_face = mp.solutions.face_detection
+
+        with mp_face.FaceDetection(
+            model_selection=1,          # 1 = full range model, handles far/small faces better
+            min_detection_confidence=0.3 if attempt == 0 else 0.2  # more lenient on second try
+        ) as detector:
+            results = detector.process(img)
+
+        if results.detections:
+            break  # face found, stop trying
 
     if not results.detections:
-        return None, "No face detected. Please upload a clear front-facing photo."
+        return None, "No face detected. Try better lighting, move closer, or face the camera directly."
 
-    # Use the first (most confident) detection
-    detection = results.detections[0]
-    bbox = detection.bounding_box
+    # Use the most confident detection
+    detection = max(results.detections, key=lambda d: d.score[0])
+    bbox = detection.location_data.relative_bounding_box
 
-    # MediaPipe Tasks API returns absolute coordinates for bounding_box
-    x = bbox.origin_x
-    y = bbox.origin_y
-    bw = bbox.width
-    bh = bbox.height
+    # Convert relative coordinates to absolute
+    x = int(bbox.xmin * w)
+    y = int(bbox.ymin * h)
+    bw = int(bbox.width * w)
+    bh = int(bbox.height * h)
 
     # Add padding around the face
     pad = int(max(bw, bh) * 0.3)
@@ -54,8 +64,8 @@ def check_and_crop_face(image_array):
     face_crop = image_array[y1:y2, x1:x2]
 
     # Quality check — face too small
-    if face_crop.shape[0] < 100 or face_crop.shape[1] < 100:
-        return None, "Face too small. Please upload a closer photo."
+    if face_crop.shape[0] < 60 or face_crop.shape[1] < 60:
+        return None, "Face too small. Please move closer to the camera."
 
     # Resize to standard size for IP-Adapter
     face_resized = cv2.resize(face_crop, (256, 256))
