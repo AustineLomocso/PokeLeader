@@ -35,8 +35,6 @@ def get_pipeline():
 
         # Optimizations for low VRAM/RAM
         _pipe.enable_attention_slicing()
-        if device == "cuda":
-             _pipe.enable_model_cpu_offload()
 
         # Load Pokemon Trainer LoRA if it exists
         if os.path.exists(LORA_PATH):
