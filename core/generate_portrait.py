@@ -26,7 +26,7 @@ def get_pipeline():
 
         # Load base pipeline
         _pipe = StableDiffusionPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5",
+            "stable-diffusion-v1-5/stable-diffusion-v1-5",
             torch_dtype=dtype,
             variant="fp16",
             safety_checker=None,
