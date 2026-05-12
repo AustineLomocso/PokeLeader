@@ -82,20 +82,22 @@ def generate_portrait(face_image_array, gym_type):
     
     type_details = TYPE_PROMPTS.get(gym_type, '')
 
+    # FIX 4: Add explicit subject tags to prevent anatomy hallucinations
     prompt = (
-        f"pokemon trainer style, gym leader portrait, "
+        f"1person, solo, upper body portrait of a pokemon trainer, gym leader, "
         f"{type_details}, "
         f"official pokemon game art style, clean illustration, "
         f"detailed character portrait, vibrant colors, no text, no watermark"
     )
 
-    face_pil = Image.fromarray(face_image_array.astype(np.uint8))
+    # Ensure it's in RGB (just an extra safety net)
+    face_pil = Image.fromarray(face_image_array.astype(np.uint8)).convert("RGB")
 
     images = ip_model.generate(
         pil_image=face_pil,
         num_samples=1,
         num_inference_steps=NUM_STEPS,
-        seed=42,
+        seed=42, # Consider making this random later so users don't get the same pose every time!
         prompt=prompt,
         negative_prompt=NEGATIVE_PROMPT,
         scale=IP_ADAPTER_SCALE,
