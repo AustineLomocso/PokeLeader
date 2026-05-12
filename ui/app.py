@@ -42,6 +42,19 @@ Q3_OPTIONS = [
 ]
 
 
+def check_face_live(image):
+    """Real-time face detection status for the image input."""
+    if image is None:
+        return "<p style='color:gray; font-size:14px'>📷 Waiting for image...</p>"
+
+    face_crop, msg = check_and_crop_face(image)
+
+    if face_crop is not None:
+        return "<p style='color:green; font-size:14px; font-weight:bold'>✅ Face detected! You're good to go.</p>"
+    else:
+        return f"<p style='color:red; font-size:14px; font-weight:bold'>❌ No face detected. {msg}</p>"
+
+
 def generate_card(user_image, user_name, q1, q2, q3):
     if user_image is None:
         return None, "Please upload a photo first."
@@ -61,7 +74,7 @@ def generate_card(user_image, user_name, q1, q2, q3):
         
     gym_type, type_color = assign_type(q1_idx, q2_idx, q3_idx)
 
-    # Portrait generation (In a real app, this would use the SD model)
+    # Portrait generation
     try:
         portrait = generate_portrait(face_crop, gym_type)
     except Exception as e:
@@ -98,6 +111,12 @@ with gr.Blocks(title="PokéLeader") as demo:
     with gr.Row():
         with gr.Column():
             user_image = gr.Image(label="Upload your photo", type="numpy")
+
+            # Face detection status indicator
+            face_status = gr.HTML(
+                value="<p style='color:gray; font-size:14px'>📷 Waiting for image...</p>"
+            )
+
             user_name  = gr.Textbox(label="Your name", placeholder="Ash")
             q1 = gr.Radio(choices=Q1_OPTIONS, label="Your villain origin story")
             q2 = gr.Radio(choices=Q2_OPTIONS, label="Your natural habitat")
@@ -107,6 +126,13 @@ with gr.Blocks(title="PokéLeader") as demo:
         with gr.Column():
             output_card   = gr.Image(label="Your Gym Leader Card")
             output_status = gr.Textbox(label="Result", interactive=False)
+
+    # Trigger face detection every time image changes
+    user_image.change(
+        fn=check_face_live,
+        inputs=user_image,
+        outputs=face_status
+    )
 
     submit.click(
         fn=generate_card,
