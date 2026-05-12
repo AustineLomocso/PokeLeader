@@ -3,7 +3,7 @@
 import sys
 import torch
 from diffusers import StableDiffusionPipeline
-from ip_adapter import IPAdapterFull
+from ip_adapter import IPAdapter
 from huggingface_hub import hf_hub_download
 from train.config import IMAGE_SIZE, NUM_STEPS, GUIDANCE_SCALE, LORA_WEIGHT, IP_ADAPTER_SCALE
 import os
@@ -46,10 +46,10 @@ def get_pipeline():
                 print(f"⚠ Could not load LoRA: {e}. Continuing without it.")
         ip_adapter_weights = hf_hub_download(
             repo_id="h94/IP-Adapter",
-            filename="models/ip-adapter-full-face_sd15.bin"
+            filename="models/ip-adapter_sd15.bin"  
         )
 
-        _ip_model = IPAdapterFull(
+        _ip_model = IPAdapter(
             sd_pipe=_pipe,
             image_encoder_path="laion/CLIP-ViT-H-14-laion2B-s32B-b79K",
             ip_ckpt=ip_adapter_weights,
