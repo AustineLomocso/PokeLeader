@@ -10,4 +10,4 @@ if __name__ == "__main__":
     print("Alternatively, wait for the background download to finish.")
     
     from ui.app import demo
-    demo.launch(share=False)
+    demo.launch(share=True)
