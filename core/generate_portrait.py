@@ -84,10 +84,10 @@ def generate_portrait(face_image_array, gym_type):
 
     # FIX 4: Add explicit subject tags to prevent anatomy hallucinations
     prompt = (
-        f"1person, solo, upper body portrait of a pokemon trainer, gym leader, "
+        f"1person, solo, upper body portrait, pokemon trainer, "
+        f"sugimori ken (style), " 
         f"{type_details}, "
-        f"official pokemon game art style, clean illustration, "
-        f"detailed character portrait, vibrant colors, no text, no watermark"
+        f"masterpiece, high quality, official art, vibrant colors, white background"
     )
 
     # Ensure it's in RGB (just an extra safety net)
