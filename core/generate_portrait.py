@@ -32,7 +32,7 @@ def get_pipeline():
             safety_checker=None,
             low_cpu_mem_usage=True,
         ).to(device)
-        _pipe.upcast_vae()
+    
         # Optimizations for low VRAM/RAM
         _pipe.enable_attention_slicing()
 
@@ -92,7 +92,7 @@ def generate_portrait(face_image_array, gym_type):
 
     # Ensure it's in RGB (just an extra safety net)
     face_pil = Image.fromarray(face_image_array.astype(np.uint8)).convert("RGB")
-    face_pil.save("debug_crop_check.png")
+
     images = ip_model.generate(
         pil_image=face_pil,
         num_samples=1,
